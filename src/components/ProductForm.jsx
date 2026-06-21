@@ -1,57 +1,68 @@
 import React, { useState } from 'react';
 
 function ProductForm() {
+  // Estados para guardar lo que el usuario escribe en los inputs
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState('');
   const [precio, setPrecio] = useState('');
   const [stock, setStock] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  
+  // Estados para la imagen y su vista previa
   const [imagen, setImagen] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // Lista principal donde se guardan todos los productos y los mensajes de error
   const [productos, setProductos] = useState([]);
   const [errores, setErrores] = useState({});
 
+  // Revisa el archivo seleccionado y crea la miniatura
   const handleImagenChange = (e) => {
     const archivo = e.target.files[0];
     if (!archivo) return;
 
+    // Validación de 2MB máximo
     const tamanoMaximoMB = 2;
     const tamanoEnBytes = tamanoMaximoMB * 1024 * 1024;
 
     if (archivo.size > tamanoEnBytes) {
       setErrores({
         ...errores,
-        imagen: `El archivo es muy pesado. El tamaño máximo permitido es de ${tamanoMaximoMB}MB.`
+        imagen: `El archivo es muy pesado. Máximo ${tamanoMaximoMB}MB.`
       });
       setImagen(null);
       setPreview(null);
       return;
     }
 
+    // Si todo está bien, guardamos la foto y generamos la url temporal para verla
     setErrores({ ...errores, imagen: null });
     setImagen(archivo);
     setPreview(URL.createObjectURL(archivo));
   };
 
+  // Función que se ejecuta al presionar "Guardar"
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Evita que la página recargue de golpe
     const nuevosErrores = {};
 
-    if (!nombre.trim()) nuevosErrores.nombre = 'El nombre del producto es obligatorio.';
-    if (!categoria) nuevosErrores.categoria = 'Debes seleccionar una categoría.';
-    if (!precio || Number(precio) <= 0) nuevosErrores.precio = 'El precio debe ser un número mayor a cero.';
-    if (!stock || Number(stock) < 0) nuevosErrores.stock = 'El stock es obligatorio y no puede ser negativo.';
-    if (!descripcion.trim()) nuevosErrores.descripcion = 'Añade una breve descripción del producto.';
-    if (!imagen) nuevosErrores.imagen = 'Debes adjuntar una imagen para el producto.';
+    // Filtros para asegurar que no manden datos en blanco o con valores raros
+    if (!nombre.trim()) nuevosErrores.nombre = 'Falta el nombre.';
+    if (!categoria) nuevosErrores.categoria = 'Elige una categoría.';
+    if (!precio || Number(precio) <= 0) nuevosErrores.precio = 'El precio debe ser mayor a 0.';
+    if (!stock || Number(stock) < 0) nuevosErrores.stock = 'El stock no puede ser negativo.';
+    if (!descripcion.trim()) nuevosErrores.descripcion = 'Falta la descripción.';
+    if (!imagen) nuevosErrores.imagen = 'Sube una foto del producto.';
 
+    // Si pillamos errores, cortamos aquí y los mostramos en pantalla
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
       return;
     }
 
+    // Armamos el objeto con la info lista para guardar
     const nuevoProducto = {
-      id: Date.now(),
+      id: Date.now(), // Usamos la fecha como ID único rápido
       nombre,
       categoria,
       precio: parseFloat(precio),
@@ -60,8 +71,10 @@ function ProductForm() {
       imagenUrl: preview
     };
 
+    // Metemos el producto nuevo al arreglo existente
     setProductos([...productos, nuevoProducto]);
 
+    // Limpiamos los campos del formulario para ingresar otro
     setNombre('');
     setCategoria('');
     setPrecio('');
@@ -72,9 +85,14 @@ function ProductForm() {
     setErrores({});
   };
 
+  // Función para borrar un producto usando su ID
   const eliminarProducto = (idParaEliminar) => {
-    const listaActualizada = productos.filter(producto => producto.id !== idParaEliminar);
-    setProductos(listaActualizada);
+    const confirmar = window.confirm('¿Seguro que quieres borrar este producto?');
+    if (confirmar) {
+      // Filtramos dejando pasar a todos menos al que queremos borrar
+      const listaActualizada = productos.filter(producto => producto.id !== idParaEliminar);
+      setProductos(listaActualizada);
+    }
   };
 
   return (
@@ -87,6 +105,7 @@ function ProductForm() {
       </header>
 
       <div className="main-container">
+        {/* Lado izquierdo: Formulario */}
         <section className="form-section">
           <h2>Registro de Hardware</h2>
           
@@ -120,6 +139,7 @@ function ProductForm() {
                 <label>Precio ($) *</label>
                 <input 
                   type="number" 
+                  min="1"
                   placeholder="250000"
                   value={precio} 
                   onChange={(e) => setPrecio(e.target.value)} 
@@ -131,6 +151,7 @@ function ProductForm() {
                 <label>Unidades en Stock *</label>
                 <input 
                   type="number" 
+                  min="0" 
                   placeholder="15"
                   value={stock} 
                   onChange={(e) => setStock(e.target.value)} 
@@ -163,7 +184,7 @@ function ProductForm() {
 
             {preview && (
               <div className="preview-container">
-                <p className="preview-title">Vista previa de la foto:</p>
+                <p className="preview-title">Vista previa:</p>
                 <img src={preview} alt="Vista previa" className="img-preview" />
               </div>
             )}
@@ -174,6 +195,7 @@ function ProductForm() {
           </form>
         </section>
 
+        {/* Lado derecho: Tarjetas */}
         <section className="inventory-section">
           <h2>Inventario Actual</h2>
 
@@ -203,7 +225,7 @@ function ProductForm() {
                       onClick={() => eliminarProducto(prod.id)} 
                       className="btn-delete"
                     >
-                      Eliminar producto
+                      Eliminar
                     </button>
                   </div>
                 </div>
